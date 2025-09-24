@@ -1,0 +1,42 @@
+export interface ChronicCondition {
+  id: string;
+  name: string;
+  diagnosedDate: string;
+  notes?: string;
+}
+
+export interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  times: string[]; // e.g., ["08:00", "20:00"]
+  startDate: string;
+  endDate?: string;
+  sideEffects?: string[];
+  forCondition?: string;
+  notes?: string;
+}
+
+export interface Consultation {
+  id: string;
+  date: string;
+  symptoms: string;
+  diagnosis: string;
+  recommendations: string[];
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface MedicalProfile {
+  chronicConditions: ChronicCondition[];
+  medications: Medication[];
+  allergies: string[];
+  consultations: Consultation[];
+}
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}

@@ -10,10 +10,12 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
-import { Send, AlertCircle, Sparkles } from 'lucide-react-native';
+import { Send, AlertCircle, Sparkles, Camera } from 'lucide-react-native';
 import { useMedicalProfile } from '@/contexts/medical-profile';
 import type { Message, Consultation } from '@/types/health';
+import CameraModal from '@/components/CameraModal';
 
 export default function HealthCheckScreen() {
   const { profile, addConsultation } = useMedicalProfile();
@@ -21,12 +23,14 @@ export default function HealthCheckScreen() {
     {
       id: '1',
       role: 'assistant',
-      content: "Hello! I'm your AI health assistant. How are you feeling today? Please describe any symptoms you're experiencing.",
+      content: "Hello! I'm your AI health assistant. How are you feeling today? Please describe any symptoms you're experiencing. You can also take photos to show me visual symptoms.",
       timestamp: new Date().toISOString(),
     },
   ]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [cameraModalVisible, setCameraModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -53,18 +57,29 @@ export default function HealthCheckScreen() {
     return context;
   };
 
+  const handlePhotoTaken = (uri: string) => {
+    setSelectedImage(uri);
+    setCameraModalVisible(false);
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+  };
+
   const handleSend = async () => {
-    if (!inputText.trim() || isLoading) return;
+    if ((!inputText.trim() && !selectedImage) || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputText,
+      content: inputText || 'Photo of symptoms',
       timestamp: new Date().toISOString(),
+      imageUri: selectedImage || undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputText('');
+    setSelectedImage(null);
     setIsLoading(true);
 
     try {
@@ -75,6 +90,56 @@ export default function HealthCheckScreen() {
         throw new Error('Missing OpenAI API key. Set EXPO_PUBLIC_OPENAI_API_KEY.');
       }
 
+      // Prepare messages for API call
+      const apiMessages: any[] = [
+        {
+          role: 'system',
+          content: `You are a helpful AI health assistant. You provide general health information and guidance based on symptoms described and visual analysis of photos. 
+          ${medicalContext}
+          
+          IMPORTANT GUIDELINES:
+          1. Always remind users that this is not a replacement for professional medical advice
+          2. Consider the patient's chronic conditions and medications when analyzing symptoms
+          3. Identify if symptoms might be medication side effects
+          4. Provide severity assessment (low, medium, high)
+          5. Suggest when to seek immediate medical attention
+          6. Be empathetic and supportive
+          7. Format your response clearly with sections for: Assessment, Possible Causes, Recommendations
+          8. Consider drug interactions if relevant
+          9. When analyzing photos, describe what you see and how it might relate to symptoms
+          10. Never provide definitive medical diagnoses based on photos alone`,
+        },
+        ...messages.map(m => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ];
+
+      // Add the current user message with or without image
+      if (selectedImage) {
+        apiMessages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: inputText || 'Please analyze this photo of my symptoms',
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: selectedImage,
+                detail: 'high',
+              },
+            },
+          ],
+        });
+      } else {
+        apiMessages.push({
+          role: 'user',
+          content: inputText,
+        });
+      }
+
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -82,32 +147,8 @@ export default function HealthCheckScreen() {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a helpful AI health assistant. You provide general health information and guidance based on symptoms described. 
-              ${medicalContext}
-              
-              IMPORTANT GUIDELINES:
-              1. Always remind users that this is not a replacement for professional medical advice
-              2. Consider the patient's chronic conditions and medications when analyzing symptoms
-              3. Identify if symptoms might be medication side effects
-              4. Provide severity assessment (low, medium, high)
-              5. Suggest when to seek immediate medical attention
-              6. Be empathetic and supportive
-              7. Format your response clearly with sections for: Assessment, Possible Causes, Recommendations
-              8. Consider drug interactions if relevant`,
-            },
-            ...messages.map(m => ({
-              role: m.role,
-              content: m.content,
-            })),
-            {
-              role: 'user',
-              content: inputText,
-            },
-          ],
+          model: selectedImage ? 'gpt-4o' : 'gpt-4o-mini', // Use vision model for images
+          messages: apiMessages,
           temperature: 0.4,
         }),
       });
@@ -142,7 +183,7 @@ export default function HealthCheckScreen() {
       const consultation: Consultation = {
         id: Date.now().toString(),
         date: new Date().toISOString(),
-        symptoms: inputText,
+        symptoms: selectedImage ? `${inputText} [Photo attached]` : inputText,
         diagnosis: content.split('\n')[0] || 'General health inquiry',
         recommendations: content.match(/- (.*)/g)?.map((r: string) => r.replace('- ', '')) || [],
         severity,
@@ -190,6 +231,9 @@ export default function HealthCheckScreen() {
                 <Text style={styles.assistantLabel}>AI Assistant</Text>
               </View>
             )}
+            {message.imageUri && (
+              <Image source={{ uri: message.imageUri }} style={styles.messageImage} />
+            )}
             <Text style={[
               styles.messageText,
               message.role === 'user' && styles.userMessageText,
@@ -201,28 +245,53 @@ export default function HealthCheckScreen() {
         {isLoading && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color="#00A896" />
-            <Text style={styles.loadingText}>Analyzing your symptoms...</Text>
+            <Text style={styles.loadingText}>
+              {selectedImage ? 'Analyzing your photo and symptoms...' : 'Analyzing your symptoms...'}
+            </Text>
           </View>
         )}
       </ScrollView>
 
       <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          value={inputText}
-          onChangeText={setInputText}
-          placeholder="Describe your symptoms..."
-          placeholderTextColor="#8E8E93"
-          multiline
-        />
-        <TouchableOpacity
-          style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={!inputText.trim() || isLoading}
-        >
-          <Send size={20} color="#FFFFFF" />
-        </TouchableOpacity>
+        {selectedImage && (
+          <View style={styles.selectedImageContainer}>
+            <Image source={{ uri: selectedImage }} style={styles.selectedImage} />
+            <TouchableOpacity style={styles.removeImageButton} onPress={removeSelectedImage}>
+              <Text style={styles.removeImageText}>×</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <View style={styles.inputRow}>
+          <TextInput
+            style={styles.input}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder="Describe your symptoms..."
+            placeholderTextColor="#8E8E93"
+            multiline
+          />
+          <TouchableOpacity
+            style={styles.cameraButton}
+            onPress={() => setCameraModalVisible(true)}
+          >
+            <Camera size={20} color="#00A896" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sendButton, ((!inputText.trim() && !selectedImage) || isLoading) && styles.sendButtonDisabled]}
+            onPress={handleSend}
+            disabled={(!inputText.trim() && !selectedImage) || isLoading}
+          >
+            <Send size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      <CameraModal
+        visible={cameraModalVisible}
+        onClose={() => setCameraModalVisible(false)}
+        onPhotoTaken={handlePhotoTaken}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -296,11 +365,39 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   inputContainer: {
-    flexDirection: 'row',
     padding: 16,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E5E7',
+  },
+  selectedImageContainer: {
+    position: 'relative',
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  selectedImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FF6B6B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeImageText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inputRow: {
+    flexDirection: 'row',
     gap: 12,
     alignItems: 'flex-end',
   },
@@ -315,6 +412,16 @@ const styles = StyleSheet.create({
     maxHeight: 100,
     color: '#1A1A1A',
   },
+  cameraButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+  },
   sendButton: {
     width: 40,
     height: 40,
@@ -325,5 +432,11 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 8,
   },
 });

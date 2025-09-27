@@ -39,4 +39,5 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  imageUri?: string; // For camera photos
 }

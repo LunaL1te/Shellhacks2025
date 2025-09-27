@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.ai-health-diagnostic-app"
+      "package": "com.rork.aihealthdiagnosticapp"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -37,6 +37,8 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "newArchEnabled": true,
+    "turboModules": true
   }
 }

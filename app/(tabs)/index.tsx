@@ -69,13 +69,20 @@ export default function HealthCheckScreen() {
 
     try {
       const medicalContext = generateMedicalContext();
-      
-      const response = await fetch('https://toolkit.rork.com/text/llm/', {
+
+      const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+      if (!apiKey) {
+        throw new Error('Missing OpenAI API key. Set EXPO_PUBLIC_OPENAI_API_KEY.');
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
+          model: 'gpt-4o-mini',
           messages: [
             {
               role: 'system',
@@ -101,15 +108,22 @@ export default function HealthCheckScreen() {
               content: inputText,
             },
           ],
+          temperature: 0.4,
         }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI error: ${errorText}`);
+      }
+
       const data = await response.json();
+      const content = data?.choices?.[0]?.message?.content ?? 'Sorry, I could not generate a response.';
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.completion,
+        content,
         timestamp: new Date().toISOString(),
       };
 
@@ -117,7 +131,7 @@ export default function HealthCheckScreen() {
 
       // Extract severity from response (simple heuristic)
       let severity: 'low' | 'medium' | 'high' = 'low';
-      const lowerContent = data.completion.toLowerCase();
+      const lowerContent = content.toLowerCase();
       if (lowerContent.includes('emergency') || lowerContent.includes('immediate') || lowerContent.includes('urgent')) {
         severity = 'high';
       } else if (lowerContent.includes('consult') || lowerContent.includes('monitor')) {
@@ -129,8 +143,8 @@ export default function HealthCheckScreen() {
         id: Date.now().toString(),
         date: new Date().toISOString(),
         symptoms: inputText,
-        diagnosis: data.completion.split('\n')[0] || 'General health inquiry',
-        recommendations: data.completion.match(/- (.*)/g)?.map((r: string) => r.replace('- ', '')) || [],
+        diagnosis: content.split('\n')[0] || 'General health inquiry',
+        recommendations: content.match(/- (.*)/g)?.map((r: string) => r.replace('- ', '')) || [],
         severity,
       };
       
@@ -200,7 +214,6 @@ export default function HealthCheckScreen() {
           placeholder="Describe your symptoms..."
           placeholderTextColor="#8E8E93"
           multiline
-          maxHeight={100}
         />
         <TouchableOpacity
           style={[styles.sendButton, (!inputText.trim() || isLoading) && styles.sendButtonDisabled]}

@@ -12,13 +12,15 @@ import {
   Alert,
   Image,
 } from 'react-native';
-import { Send, AlertCircle, Sparkles, Camera } from 'lucide-react-native';
-import { useMedicalProfile } from '@/contexts/medical-profile';
+import { Send, AlertCircle, Sparkles, Camera, Heart } from 'lucide-react-native';
+import { useMedicalProfile } from '@/contexts/medical-profile-database';
 import type { Message, Consultation } from '@/types/health';
 import CameraModal from '@/components/CameraModal';
+import SetupInstructions from '@/components/SetupInstructions';
+import DatabaseStatus from '@/components/DatabaseStatus';
 
 export default function HealthCheckScreen() {
-  const { profile, addConsultation } = useMedicalProfile();
+  const { profile, addConsultation, isLoading: profileLoading, isDatabaseReady } = useMedicalProfile();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -31,11 +33,20 @@ export default function HealthCheckScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [cameraModalVisible, setCameraModalVisible] = useState(false);
+  const [showSetup, setShowSetup] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+
+  useEffect(() => {
+    // Check if API key is configured
+    const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
+    if (!apiKey || apiKey === '') {
+      setShowSetup(true);
+    }
+  }, []);
 
   const generateMedicalContext = () => {
     let context = "Patient medical profile:\n";
@@ -52,6 +63,12 @@ export default function HealthCheckScreen() {
     
     if (profile.allergies.length > 0) {
       context += `Allergies: ${profile.allergies.join(', ')}\n`;
+    }
+    
+    if (profile.surgeries.length > 0) {
+      context += `Previous surgeries: ${profile.surgeries.map(s => 
+        `${s.name} (${new Date(s.date).toLocaleDateString()}${s.surgeon ? `, performed by ${s.surgeon}` : ''}${s.complications?.length ? `, complications: ${s.complications.join(', ')}` : ''})`
+      ).join('; ')}\n`;
     }
     
     return context;
@@ -86,8 +103,9 @@ export default function HealthCheckScreen() {
       const medicalContext = generateMedicalContext();
 
       const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
-      if (!apiKey) {
-        throw new Error('Missing OpenAI API key. Set EXPO_PUBLIC_OPENAI_API_KEY.');
+      if (!apiKey || apiKey === 'your_openai_api_key_here') {
+        setShowSetup(true);
+        return;
       }
 
       // Prepare messages for API call
@@ -199,14 +217,46 @@ export default function HealthCheckScreen() {
     }
   };
 
+  if (showSetup) {
+    return (
+      <SetupInstructions onSetupComplete={() => setShowSetup(false)} />
+    );
+  }
+
+  if (profileLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00A896" />
+        <Text style={styles.loadingText}>Loading your medical profile...</Text>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView 
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={90}
     >
+      <DatabaseStatus 
+        isLoading={profileLoading} 
+        isDatabaseReady={isDatabaseReady} 
+      />
+      
+      <View style={styles.welcomeHeader}>
+        <View style={styles.welcomeContent}>
+          <Text style={styles.welcomeTitle}>Welcome to AI Health Assistant</Text>
+          <Text style={styles.welcomeSubtitle}>
+            Describe your symptoms or take a photo for AI-powered health insights
+          </Text>
+        </View>
+        <View style={styles.welcomeIcon}>
+          <Heart size={32} color="#6366F1" />
+        </View>
+      </View>
+      
       <View style={styles.disclaimer}>
-        <AlertCircle size={16} color="#FF6B6B" />
+        <AlertCircle size={16} color="#EF4444" />
         <Text style={styles.disclaimerText}>
           This is not a replacement for professional medical advice
         </Text>
@@ -299,97 +349,168 @@ export default function HealthCheckScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
+  },
+  welcomeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  welcomeContent: {
+    flex: 1,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  welcomeSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    lineHeight: 22,
+    fontWeight: '400',
+  },
+  welcomeIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#F0F4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 16,
   },
   disclaimer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF5F5',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
   },
   disclaimerText: {
     flex: 1,
-    fontSize: 12,
-    color: '#FF6B6B',
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
-    gap: 12,
+    padding: 20,
+    gap: 16,
   },
   messageBubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 16,
+    maxWidth: '85%',
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#00A896',
+    backgroundColor: '#6366F1',
+    borderBottomRightRadius: 6,
   },
   assistantMessage: {
     alignSelf: 'flex-start',
     backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 6,
   },
   assistantHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 10,
   },
   assistantLabel: {
     fontSize: 12,
-    color: '#00A896',
+    color: '#6366F1',
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   messageText: {
     fontSize: 15,
-    color: '#1A1A1A',
-    lineHeight: 20,
+    color: '#1F2937',
+    lineHeight: 22,
+    fontWeight: '400',
   },
   userMessageText: {
     color: '#FFFFFF',
+    fontWeight: '500',
   },
   loadingContainer: {
-    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    padding: 12,
-    alignSelf: 'flex-start',
+    backgroundColor: '#F8FAFC',
+    gap: 20,
   },
   loadingText: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   inputContainer: {
-    padding: 16,
+    padding: 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   selectedImageContainer: {
     position: 'relative',
-    marginBottom: 12,
+    marginBottom: 16,
     alignSelf: 'flex-start',
   },
   selectedImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   removeImageButton: {
     position: 'absolute',
     top: -8,
     right: -8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FF6B6B',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#EF4444',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
   },
   removeImageText: {
     color: '#FFFFFF',
@@ -403,40 +524,58 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     fontSize: 15,
-    maxHeight: 100,
-    color: '#1A1A1A',
+    maxHeight: 120,
+    color: '#1F2937',
+    backgroundColor: '#F9FAFB',
+    fontWeight: '400',
   },
   cameraButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F2F2F7',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#00A896',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#6366F1',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   sendButtonDisabled: {
     opacity: 0.5,
+    shadowOpacity: 0.1,
   },
   messageImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 8,
+    width: 240,
+    height: 240,
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

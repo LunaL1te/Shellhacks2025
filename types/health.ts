@@ -27,11 +27,23 @@ export interface Consultation {
   severity: 'low' | 'medium' | 'high';
 }
 
+export interface Surgery {
+  id: string;
+  name: string;
+  date: string;
+  surgeon?: string;
+  hospital?: string;
+  notes?: string;
+  complications?: string[];
+  recoveryTime?: string;
+}
+
 export interface MedicalProfile {
   chronicConditions: ChronicCondition[];
   medications: Medication[];
   allergies: string[];
   consultations: Consultation[];
+  surgeries: Surgery[];
 }
 
 export interface Message {

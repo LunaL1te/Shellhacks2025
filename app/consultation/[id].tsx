@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { Calendar, AlertCircle, CheckCircle } from 'lucide-react-native';
-import { useMedicalProfile } from '@/contexts/medical-profile';
+import { useMedicalProfile } from '@/contexts/medical-profile-database';
 
 export default function ConsultationDetailScreen() {
   const { id } = useLocalSearchParams();

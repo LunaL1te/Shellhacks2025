@@ -166,16 +166,80 @@ Alternative web deployment options:
 - **Vercel**: Deploy directly from your GitHub repository
 - **Netlify**: Connect your GitHub repo to Netlify for automatic deployments
 
+## AI Setup Instructions
+
+This app includes AI-powered health diagnostic features. To enable the AI functionality:
+
+### 1. Get an OpenAI API Key
+1. Visit [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Create an account or sign in
+3. Generate a new API key
+
+### 2. Configure the API Key
+1. Open the `.env` file in your project root
+2. Replace `your_openai_api_key_here` with your actual API key:
+   ```
+   EXPO_PUBLIC_OPENAI_API_KEY=sk-your-actual-api-key-here
+   ```
+
+### 3. Restart the App
+After setting up your API key, restart the development server:
+```bash
+bun run start
+```
+
+The app will automatically detect when the API key is configured and enable AI features.
+
+## Database Features
+
+This app uses SQLite for robust medical data storage:
+
+### **Database Schema**
+- **Users** - User profiles and basic information
+- **Chronic Conditions** - Medical conditions with severity tracking
+- **Medications** - Drug information with dosage schedules
+- **Allergies** - Allergy tracking with severity levels
+- **Consultations** - AI consultation history and results
+- **Vital Signs** - Blood pressure, heart rate, temperature (future)
+- **Medical Documents** - File attachments (future)
+- **Appointments** - Doctor appointments (future)
+
+### **Data Migration**
+- Automatic migration from AsyncStorage to SQLite on first launch
+- Preserves all existing medical data
+- Safe migration with error handling
+
+### **Database Management**
+- View data summary and statistics
+- Export data (future feature)
+- Import data (future feature)
+- Clear all data with confirmation
+- Real-time database status monitoring
+
+### **Security & Privacy**
+- All data stored locally on device
+- No data sent to external servers (except AI API calls)
+- SQLite encryption support ready
+- HIPAA-compliant data structure
+
 ## App Features
 
-This template includes:
+This AI Health Diagnostic App includes:
 
+- **AI-Powered Health Analysis** - OpenAI GPT-4 integration for symptom analysis
+- **Photo Analysis** - Upload photos for visual symptom assessment
+- **Medical Profile Management** - Track conditions, medications, and allergies
+- **Consultation History** - Save and review past AI consultations
+- **SQLite Database** - Robust local database for medical data storage
+- **Data Migration** - Automatic migration from AsyncStorage to database
+- **Database Management** - View, export, and manage your medical data
+- **Offline Support** - Full functionality without internet connection
+- **Data Security** - Local storage with encryption support
 - **Cross-platform compatibility** - Works on iOS, Android, and Web
 - **File-based routing** with Expo Router
 - **Tab navigation** with customizable tabs
-- **Modal screens** for overlays and dialogs
+- **Camera integration** for symptom photos
 - **TypeScript support** for better development experience
-- **Async storage** for local data persistence
 - **Vector icons** with Lucide React Native
 
 ## Project Structure

@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useMedicalProfile } from '@/contexts/medical-profile';
+import { useMedicalProfile } from '@/contexts/medical-profile-database';
 import type { ChronicCondition } from '@/types/health';
 
 export default function AddConditionScreen() {

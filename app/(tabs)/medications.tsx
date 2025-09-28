@@ -6,14 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Plus, Clock, Pill, AlertCircle, Bell, BellOff, Heart } from 'lucide-react-native';
-import { useMedicalProfile } from '@/contexts/medical-profile';
+import { useMedicalProfile } from '@/contexts/medical-profile-database';
 import { router } from 'expo-router';
 import type { Medication } from '@/types/health';
 
 export default function MedicationsScreen() {
-  const { profile, removeMedication, getUpcomingMedications } = useMedicalProfile();
+  const { profile, removeMedication, getUpcomingMedications, isLoading } = useMedicalProfile();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [upcomingMeds, setUpcomingMeds] = useState<Medication[]>([]);
 
@@ -60,6 +61,15 @@ export default function MedicationsScreen() {
     // If no more doses today, return first dose tomorrow
     return `Tomorrow at ${medication.times[0]}`;
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00A896" />
+        <Text style={styles.loadingText}>Loading medications...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -175,165 +185,219 @@ export default function MedicationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   reminderSection: {
-    backgroundColor: '#FFF5F5',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFE5E5',
+    backgroundColor: '#FEF2F2',
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   reminderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 12,
+    marginBottom: 16,
   },
   reminderTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FF6B6B',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#DC2626',
   },
   reminderCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 8,
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   reminderText: {
-    fontSize: 14,
-    color: '#FF6B6B',
+    fontSize: 15,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   section: {
     backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
     marginTop: 16,
-    paddingVertical: 16,
+    paddingVertical: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    gap: 8,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    gap: 12,
   },
   sectionTitle: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
   },
   addButton: {
-    backgroundColor: '#00A896',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    backgroundColor: '#6366F1',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 32,
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#8E8E93',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 20,
+    marginBottom: 12,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#C7C7CC',
+    fontSize: 15,
+    color: '#9CA3AF',
     textAlign: 'center',
+    lineHeight: 22,
   },
   medicationCard: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: '#F3F4F6',
   },
   medicationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   medicationInfo: {
     flex: 1,
   },
   medicationName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
   },
   medicationDosage: {
-    fontSize: 15,
-    color: '#00A896',
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#6366F1',
+    fontWeight: '600',
   },
   removeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
   },
   removeButtonText: {
     fontSize: 14,
-    color: '#FF6B6B',
-    fontWeight: '500',
+    color: '#EF4444',
+    fontWeight: '600',
   },
   medicationDetails: {
-    gap: 8,
+    gap: 12,
   },
   detailRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
   detailText: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '400',
   },
   nextDoseText: {
-    fontSize: 14,
-    color: '#00A896',
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#6366F1',
+    fontWeight: '600',
   },
   sideEffectsContainer: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
+    borderTopColor: '#F3F4F6',
   },
   sideEffectsTitle: {
-    fontSize: 14,
-    color: '#FF6B6B',
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#EF4444',
+    fontWeight: '600',
   },
   sideEffectsText: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginLeft: 20,
-    marginTop: 4,
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 24,
+    marginTop: 6,
+    lineHeight: 20,
   },
   notesText: {
-    fontSize: 13,
-    color: '#636366',
+    fontSize: 14,
+    color: '#4B5563',
     fontStyle: 'italic',
-    marginTop: 8,
+    marginTop: 12,
+    lineHeight: 20,
   },
   infoSection: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
-    gap: 8,
-    marginTop: 16,
+    padding: 20,
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 20,
     marginBottom: 32,
+    backgroundColor: '#F0F9FF',
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#0EA5E9',
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
-    color: '#8E8E93',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#0C4A6E',
+    lineHeight: 20,
+    fontWeight: '400',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    gap: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });

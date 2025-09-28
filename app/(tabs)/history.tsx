@@ -5,13 +5,14 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { Calendar, AlertCircle, ChevronRight } from 'lucide-react-native';
-import { useMedicalProfile } from '@/contexts/medical-profile';
+import { useMedicalProfile } from '@/contexts/medical-profile-database';
 import { router } from 'expo-router';
 
 export default function HistoryScreen() {
-  const { profile } = useMedicalProfile();
+  const { profile, isLoading } = useMedicalProfile();
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -32,6 +33,15 @@ export default function HistoryScreen() {
       minute: '2-digit',
     });
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#00A896" />
+        <Text style={styles.loadingText}>Loading consultation history...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -117,78 +127,88 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
     backgroundColor: '#FFFFFF',
-    gap: 12,
+    gap: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1A1A1A',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 64,
-    paddingHorizontal: 32,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
   emptyText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#8E8E93',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 24,
+    marginBottom: 12,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#C7C7CC',
+    fontSize: 16,
+    color: '#9CA3AF',
     textAlign: 'center',
+    lineHeight: 24,
   },
   consultationsList: {
     padding: 16,
-    gap: 12,
+    gap: 16,
   },
   consultationCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   consultationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   dateContainer: {
     flex: 1,
   },
   consultationDate: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   severityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
   severityText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   symptomsText: {
-    fontSize: 15,
-    color: '#1A1A1A',
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 16,
+    color: '#1F2937',
+    lineHeight: 24,
+    marginBottom: 16,
+    fontWeight: '400',
   },
   consultationFooter: {
     flexDirection: 'row',
@@ -198,42 +218,62 @@ const styles = StyleSheet.create({
   recommendationsPreview: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   recommendationsCount: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   statsSection: {
-    padding: 16,
+    padding: 20,
     marginBottom: 32,
   },
   statsTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
+    textAlign: 'center',
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#00A896',
-    marginBottom: 4,
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#6366F1',
+    marginBottom: 6,
   },
   statLabel: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: 14,
+    color: '#6B7280',
     textAlign: 'center',
+    fontWeight: '500',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    gap: 20,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });

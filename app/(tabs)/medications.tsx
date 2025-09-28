@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { Plus, Clock, Pill, AlertCircle, Bell, BellOff } from 'lucide-react-native';
+import { Plus, Clock, Pill, AlertCircle, Bell, BellOff, Heart } from 'lucide-react-native';
 import { useMedicalProfile } from '@/contexts/medical-profile';
 import { router } from 'expo-router';
 import type { Medication } from '@/types/health';

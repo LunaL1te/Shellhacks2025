@@ -32,6 +32,7 @@ export interface MedicalProfile {
   medications: Medication[];
   allergies: string[];
   consultations: Consultation[];
+  userInfo?: Patient;
 }
 
 export interface Message {
@@ -40,4 +41,14 @@ export interface Message {
   content: string;
   timestamp: string;
   imageUri?: string; // For camera photos
+}
+
+export interface Patient {
+  Name: string;
+  Email: string;
+  Phone: string;
+  Weight: number;
+  Height: number;
+  Gender: string;
+  Age: number;
 }

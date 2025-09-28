@@ -124,6 +124,11 @@ export const [MedicalProfileProvider, useMedicalProfile] = createContextHook(() 
     });
   };
 
+  const setUserInfo = (userInfo: any) => {
+    const updated = { ...profile, userInfo };
+    saveProfile(updated);
+  };
+
   return {
     profile,
     isLoading,
@@ -136,5 +141,6 @@ export const [MedicalProfileProvider, useMedicalProfile] = createContextHook(() 
     removeAllergy,
     addConsultation,
     getUpcomingMedications,
+    setUserInfo,
   };
 });
